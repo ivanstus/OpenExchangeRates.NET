@@ -13,7 +13,7 @@
     <Title>OpenExchangeRates.NET</Title>
     <Description>Client for Open Exchange Rates API</Description>
     <Copyright>Copyright © 2020 Ivan Stus</Copyright>
-    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/ivanstus/OpenExchangeRates.NET</PackageProjectUrl>
     <PackageTags>openexchangerates</PackageTags>
     <RepositoryType>git</RepositoryType>
@@ -25,9 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\LICENSE.md">
+    <None Include="..\LICENSE">
       <Pack>True</Pack>
-      <PackagePath>License.md</PackagePath>
+      <PackagePath></PackagePath>
     </None>
   </ItemGroup>
 
