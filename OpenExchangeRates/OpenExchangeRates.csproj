@@ -1,18 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup>
     <PackageId>OpenExchangeRates.NET</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>Ivan Stus</Authors>
     <Title>OpenExchangeRates.NET</Title>
     <Description>Client for Open Exchange Rates API</Description>
-    <Copyright>Copyright © 2020 Ivan Stus</Copyright>
+    <Copyright>Copyright © 2022 Ivan Stus</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/ivanstus/OpenExchangeRates.NET</PackageProjectUrl>
     <PackageTags>openexchangerates</PackageTags>
@@ -21,7 +23,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="4.7.2" />
+    <PackageReference Include="System.Net.Http.Json" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>

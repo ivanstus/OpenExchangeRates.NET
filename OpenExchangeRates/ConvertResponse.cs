@@ -1,15 +1,14 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace OpenExchangeRates
+namespace OpenExchangeRates;
+
+public sealed class ConvertResponse
 {
-    public sealed class ConvertResponse
-    {
-        public ConvertRequest Request { get; set; }
+    public ConvertRequest Request { get; set; } = null!;
 
-        [JsonPropertyName("response")]
-        public decimal Amount { get; set; }
+    [JsonPropertyName("response")]
+    public decimal Amount { get; set; }
 
-        [JsonPropertyName("meta")]
-        public ConversionMetadata Metadata { get; set; }
-    }
+    [JsonPropertyName("meta")]
+    public ConversionMetadata Metadata { get; set; } = null!;
 }

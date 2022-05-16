@@ -1,11 +1,12 @@
-﻿using System;
+﻿namespace OpenExchangeRates;
 
-namespace OpenExchangeRates
+public sealed class OpenExchangeRatesException : Exception
 {
-    public sealed class OpenExchangeRatesException : Exception
+    public OpenExchangeRatesException(string? message) : base(message)
     {
-        public OpenExchangeRatesException(string message) : base(message) {}
+    }
 
-        public OpenExchangeRatesException(string message, Exception innerException) : base(message, innerException) {}
+    public OpenExchangeRatesException(string? message, Exception? innerException) : base(message, innerException)
+    {
     }
 }

@@ -1,144 +1,150 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Net.Http;
+﻿using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Web;
 
 using OpenExchangeRates.Converters;
 
-namespace OpenExchangeRates
+namespace OpenExchangeRates;
+
+public sealed class OpenExchangeRatesClient : IDisposable
 {
-    public sealed class OpenExchangeRatesClient : IDisposable
+    private const string ApiBaseUrl = "https://openexchangerates.org/api/";
+    private const string DefaultCurrency = "USD";
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        private const string ApiBaseUrl = "https://openexchangerates.org/api/";
-        private const string DefaultCurrency = "USD";
+        Converters = { new JsonValueConverterApiStatus(), new JsonValueConverterDateTimeOffsetUnixSeconds() },
+        DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
 
-        private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
+    private readonly string _appId;
+
+    private readonly HttpClient _httpClient = new()
+    {
+        BaseAddress = new Uri(ApiBaseUrl),
+        DefaultRequestHeaders =
         {
-            Converters = { new JsonValueConverterApiStatus(), new JsonValueConverterDateTimeOffsetUnixSeconds() },
-            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-
-        private readonly string _appId;
-
-        private readonly HttpClient _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri(ApiBaseUrl), DefaultRequestHeaders = { UserAgent = { new ProductInfoHeaderValue("OpenExchangeRates.NET", "1.0.0") } }
-        };
-
-        public OpenExchangeRatesClient(string appId)
-        {
-            _appId = appId ?? throw new ArgumentNullException(nameof(appId));
+            UserAgent = { new ProductInfoHeaderValue("OpenExchangeRates.NET", Assembly.GetExecutingAssembly().GetName().Version?.ToString()) }
         }
+    };
 
-        public void Dispose()
-        {
-            _httpClient?.Dispose();
-        }
+    public OpenExchangeRatesClient(string appId)
+    {
+        ArgumentNullException.ThrowIfNull(appId);
 
-        public async Task<ConvertResponse> ConvertAsync(string from, string to, decimal amount, CancellationToken cancellationToken = default, bool prettyPrint = false)
-        {
-            if (from is null)
-                throw new ArgumentNullException(nameof(from));
+        _appId = appId;
+    }
 
-            if (string.Equals(from.Trim(), string.Empty, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException(nameof(from));
+    public void Dispose()
+    {
+        _httpClient.Dispose();
+    }
 
-            if (to is null)
-                throw new ArgumentNullException(nameof(to));
+    public async Task<ConvertResponse?> ConvertAsync(string from, string to, decimal amount, bool prettyPrint = false,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
+        ArgumentNullException.ThrowIfNull(amount);
 
-            if (string.Equals(to.Trim(), string.Empty, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException(nameof(to));
+        if (string.Equals(from.Trim(), string.Empty, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException(null, nameof(from));
 
-            if (amount <= decimal.Zero)
-                throw new InvalidOperationException(nameof(amount));
+        if (string.Equals(to.Trim(), string.Empty, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException(null, nameof(to));
 
-            var response = await _httpClient.GetAsync($"convert/{amount}/{from}/{to}?" + BuildQuery(prettyPrint: prettyPrint), cancellationToken);
-            if (!response.IsSuccessStatusCode)
-                throw new OpenExchangeRatesException(response.ReasonPhrase);
+        if (amount <= decimal.Zero)
+            throw new ArgumentException(null, nameof(amount));
 
-            using var stream = await response.Content.ReadAsStreamAsync();
-            return await JsonSerializer.DeserializeAsync<ConvertResponse>(stream, JsonOptions, cancellationToken);
-        }
+        var response = await _httpClient.GetAsync($"convert/{amount}/{from}/{to}?" + BuildQuery(prettyPrint: prettyPrint), cancellationToken);
 
-        public async Task<IReadOnlyDictionary<string, string>> GetCurrenciesAsync(CancellationToken cancellationToken = default, bool prettyPrint = false, bool alternative = false,
-            bool inactive = false)
-        {
-            var response = await _httpClient.GetAsync("currencies.json?" + BuildQuery(prettyPrint: prettyPrint, alternative: alternative, inactive: inactive), cancellationToken);
-            if (!response.IsSuccessStatusCode)
-                throw new OpenExchangeRatesException(response.ReasonPhrase);
+        if (!response.IsSuccessStatusCode)
+            throw new OpenExchangeRatesException(response.ReasonPhrase);
 
-            using var stream = await response.Content.ReadAsStreamAsync();
-            return await JsonSerializer.DeserializeAsync<IReadOnlyDictionary<string, string>>(stream, JsonOptions, cancellationToken);
-        }
+        return await response.Content.ReadFromJsonAsync<ConvertResponse>(_jsonOptions, cancellationToken);
+    }
 
-        public async Task<RatesResponse> GetHistoricalRatesAsync(DateTime date, CancellationToken cancellationToken = default, string baseCurrency = DefaultCurrency,
-            IEnumerable<string> currencies = null, bool prettyPrint = false, bool alternative = false)
-        {
-            if (string.IsNullOrWhiteSpace(baseCurrency))
-                throw new InvalidOperationException(nameof(baseCurrency));
+    public async Task<IReadOnlyDictionary<string, string>?> GetCurrenciesAsync(bool prettyPrint = false, bool alternative = false,
+        bool inactive = false, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync(
+            "currencies.json?" + BuildQuery(prettyPrint: prettyPrint, alternative: alternative, inactive: inactive), cancellationToken);
 
-            var response = await _httpClient.GetAsync($"historical/{date:yyyy-MM-dd}.json?" + BuildQuery(baseCurrency, currencies, prettyPrint, alternative), cancellationToken);
-            if (!response.IsSuccessStatusCode)
-                throw new OpenExchangeRatesException(response.ReasonPhrase);
+        if (!response.IsSuccessStatusCode)
+            throw new OpenExchangeRatesException(response.ReasonPhrase);
 
-            using var stream = await response.Content.ReadAsStreamAsync();
-            return await JsonSerializer.DeserializeAsync<RatesResponse>(stream, JsonOptions, cancellationToken);
-        }
+        return await response.Content.ReadFromJsonAsync<IReadOnlyDictionary<string, string>?>(_jsonOptions, cancellationToken);
+    }
 
-        public async Task<RatesResponse> GetLatestRatesAsync(CancellationToken cancellationToken = default, string baseCurrency = DefaultCurrency,
-            IEnumerable<string> currencies = null, bool prettyPrint = false, bool alternative = false)
-        {
-            if (string.IsNullOrWhiteSpace(baseCurrency))
-                throw new InvalidOperationException(nameof(baseCurrency));
+    public async Task<RatesResponse?> GetHistoricalRatesAsync(DateOnly date, string baseCurrency = DefaultCurrency,
+        IEnumerable<string>? currencies = null, bool prettyPrint = false, bool alternative = false, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(baseCurrency);
 
-            var response = await _httpClient.GetAsync("latest.json?" + BuildQuery(baseCurrency, currencies, prettyPrint, alternative), cancellationToken);
-            if (!response.IsSuccessStatusCode)
-                throw new OpenExchangeRatesException(response.ReasonPhrase);
+        return await GetHistoricalRatesAsync(date.ToDateTime(TimeOnly.MinValue), baseCurrency, currencies, prettyPrint, alternative,
+            cancellationToken);
+    }
 
-            using var stream = await response.Content.ReadAsStreamAsync();
-            return await JsonSerializer.DeserializeAsync<RatesResponse>(stream, JsonOptions, cancellationToken);
-        }
+    public async Task<RatesResponse?> GetHistoricalRatesAsync(DateTime date, string baseCurrency = DefaultCurrency,
+        IEnumerable<string>? currencies = null, bool prettyPrint = false, bool alternative = false, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(baseCurrency);
 
-        public async Task<UsageData> GetUsageDataAsync(CancellationToken cancellationToken = default, bool prettyPrint = false)
-        {
-            var response = await _httpClient.GetAsync("usage.json?" + BuildQuery(prettyPrint: prettyPrint), cancellationToken);
-            if (!response.IsSuccessStatusCode)
-                throw new OpenExchangeRatesException(response.ReasonPhrase);
+        if (string.Equals(baseCurrency.Trim(), string.Empty, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException(null, nameof(baseCurrency));
 
-            using var stream = await response.Content.ReadAsStreamAsync();
-            var usageResponse = await JsonSerializer.DeserializeAsync<UsageResponse>(stream, JsonOptions, cancellationToken);
-            return usageResponse?.Data;
-        }
+        var response = await _httpClient.GetAsync(
+            $"historical/{date:yyyy-MM-dd}.json?" + BuildQuery(baseCurrency, currencies, prettyPrint, alternative), cancellationToken);
 
-        private string BuildQuery(string baseCurrency = null, IEnumerable<string> currencies = null, bool prettyPrint = false, bool alternative = false, bool inactive = false)
-        {
-            var sb = new StringBuilder();
-            sb.AppendFormat(CultureInfo.InvariantCulture, "app_id={0}", _appId);
+        if (!response.IsSuccessStatusCode)
+            throw new OpenExchangeRatesException(response.ReasonPhrase);
 
-            if (baseCurrency != null)
-                sb.AppendFormat(CultureInfo.InvariantCulture, "&base={0}", baseCurrency);
+        return await response.Content.ReadFromJsonAsync<RatesResponse>(_jsonOptions, cancellationToken);
+    }
 
-            if (currencies != null)
-                sb.AppendFormat(CultureInfo.InvariantCulture, "&symbols={0}", HttpUtility.UrlEncode(string.Join(",", currencies)));
+    public async Task<RatesResponse?> GetLatestRatesAsync(string? baseCurrency = null, IEnumerable<string>? currencies = null,
+        bool prettyPrint = false, bool alternative = false, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync("latest.json?" + BuildQuery(baseCurrency, currencies, prettyPrint, alternative), cancellationToken);
 
-            if (prettyPrint)
-                sb.Append("&prettyprint=true");
+        if (!response.IsSuccessStatusCode)
+            throw new OpenExchangeRatesException(response.ReasonPhrase);
 
-            if (alternative)
-                sb.Append("&show_alternative=true");
+        return await response.Content.ReadFromJsonAsync<RatesResponse>(_jsonOptions, cancellationToken);
+    }
 
-            if (inactive)
-                sb.Append("&show_inactive=true");
+    public async Task<UsageData?> GetUsageDataAsync(bool prettyPrint = false, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync("usage.json?" + BuildQuery(prettyPrint: prettyPrint), cancellationToken);
 
-            return sb.ToString();
-        }
+        if (!response.IsSuccessStatusCode)
+            throw new OpenExchangeRatesException(response.ReasonPhrase);
+
+        var usageResponse = await response.Content.ReadFromJsonAsync<UsageResponse>(_jsonOptions, cancellationToken);
+
+        return usageResponse?.Data;
+    }
+
+    private string BuildQuery(string? baseCurrency = null, IEnumerable<string>? currencies = null, bool? prettyPrint = null, bool? alternative = null,
+        bool? inactive = null)
+    {
+        var sb = new StringBuilder();
+        sb.Append($"app_id={_appId}");
+
+        if (baseCurrency != null)
+            sb.Append($"&base={baseCurrency}");
+
+        if (currencies != null)
+            sb.Append($"&symbols={WebUtility.UrlEncode(string.Join(",", currencies))}");
+
+        return sb.AppendNameValueBoolean("prettyprint", prettyPrint)
+            .AppendNameValueBoolean("show_alternative", alternative)
+            .AppendNameValueBoolean("show_inactive", inactive)
+            .ToString();
     }
 }

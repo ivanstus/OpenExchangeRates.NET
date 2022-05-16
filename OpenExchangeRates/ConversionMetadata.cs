@@ -1,11 +1,7 @@
-﻿using System;
+﻿namespace OpenExchangeRates;
 
-namespace OpenExchangeRates
+public sealed class ConversionMetadata
 {
-    public sealed class ConversionMetadata
-    {
-        public DateTimeOffset Timestamp { get; set; }
-
-        public decimal Rate { get; set; }
-    }
+    public DateTimeOffset Timestamp { get; set; }
+    public decimal Rate { get; set; }
 }

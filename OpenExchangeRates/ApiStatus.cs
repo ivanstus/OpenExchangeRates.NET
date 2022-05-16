@@ -1,9 +1,8 @@
-﻿namespace OpenExchangeRates
+﻿namespace OpenExchangeRates;
+
+public enum ApiStatus
 {
-    public enum ApiStatus
-    {
-        Unknown,
-        Active,
-        AccessRestricted
-    }
+    Unknown,
+    Active,
+    AccessRestricted
 }
