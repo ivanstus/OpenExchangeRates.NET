@@ -1,35 +1,47 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup>
     <PackageId>OpenExchangeRates.NET</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.2.1</Version>
     <Authors>Ivan Stus</Authors>
     <Title>OpenExchangeRates.NET</Title>
     <Description>Client for Open Exchange Rates API</Description>
     <Copyright>Copyright © 2022 Ivan Stus</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/ivanstus/OpenExchangeRates.NET</PackageProjectUrl>
-    <PackageTags>openexchangerates</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>openexchangerates;open-exchange-rates;currency;currency-api;currency-conversion;currency-conversion-rates;currency-converter;currency-exchange;currency-exchange-rates;currency-rates;exchange-rates</PackageTags>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/ivanstus/OpenExchangeRates.NET.git</RepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="$(TargetFramework) == 'net6.0'">
     <PackageReference Include="System.Net.Http.Json" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework) == 'net7.0'">
+    <PackageReference Include="System.Net.Http.Json" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="..\LICENSE">
       <Pack>True</Pack>
-      <PackagePath></PackagePath>
+      <PackagePath>\</PackagePath>
+    </None>
+
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
 
