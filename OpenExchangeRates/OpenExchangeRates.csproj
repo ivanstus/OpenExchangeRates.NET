@@ -1,20 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>latest</LangVersion>
     <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup>
     <PackageId>OpenExchangeRates.NET</PackageId>
-    <Version>1.2.1</Version>
+    <Version>1.3.0</Version>
     <Authors>Ivan Stus</Authors>
     <Title>OpenExchangeRates.NET</Title>
     <Description>Client for Open Exchange Rates API</Description>
-    <Copyright>Copyright © 2022 Ivan Stus</Copyright>
+    <Copyright>Copyright © 2024 Ivan Stus</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/ivanstus/OpenExchangeRates.NET</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -26,23 +25,20 @@
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net6.0'">
-    <PackageReference Include="System.Net.Http.Json" Version="6.0.0" />
+    <PackageReference Include="System.Net.Http.Json" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net7.0'">
-    <PackageReference Include="System.Net.Http.Json" Version="7.0.0" />
+    <PackageReference Include="System.Net.Http.Json" Version="7.0.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework) == 'net8.0'">
+    <PackageReference Include="System.Net.Http.Json" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\LICENSE">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-
-    <None Include="..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
+    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

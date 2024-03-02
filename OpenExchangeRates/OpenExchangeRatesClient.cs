@@ -14,7 +14,7 @@ public sealed class OpenExchangeRatesClient : IDisposable
     private const string ApiBaseUrl = "https://openexchangerates.org/api/";
     private const string DefaultCurrency = "USD";
 
-    private static readonly JsonSerializerOptions _jsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
         Converters = { new JsonValueConverterApiStatus(), new JsonValueConverterDateTimeOffsetUnixSeconds() },
         DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
@@ -35,7 +35,13 @@ public sealed class OpenExchangeRatesClient : IDisposable
 
     public OpenExchangeRatesClient(string appId)
     {
+#if NET8_0_OR_GREATER
+        ArgumentException.ThrowIfNullOrWhiteSpace(appId);
+#elif NET7_0
+        ArgumentException.ThrowIfNullOrEmpty(appId);
+#else
         ArgumentNullException.ThrowIfNull(appId);
+#endif
 
         _appId = appId;
     }
@@ -48,25 +54,32 @@ public sealed class OpenExchangeRatesClient : IDisposable
     public async Task<ConvertResponse?> ConvertAsync(string from, string to, decimal amount, bool prettyPrint = false,
         CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentException.ThrowIfNullOrWhiteSpace(from);
+        ArgumentException.ThrowIfNullOrWhiteSpace(to);
+#elif NET7_0
+        ArgumentException.ThrowIfNullOrEmpty(from);
+        ArgumentException.ThrowIfNullOrEmpty(to);
+#else
         ArgumentNullException.ThrowIfNull(from);
         ArgumentNullException.ThrowIfNull(to);
-        ArgumentNullException.ThrowIfNull(amount);
+#endif
 
         if (string.Equals(from.Trim(), string.Empty, StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException(null, nameof(from));
+            throw new ArgumentException(message: null, nameof(from));
 
         if (string.Equals(to.Trim(), string.Empty, StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException(null, nameof(to));
+            throw new ArgumentException(message: null, nameof(to));
 
         if (amount <= decimal.Zero)
-            throw new ArgumentException(null, nameof(amount));
+            throw new ArgumentException(message: null, nameof(amount));
 
         var response = await _httpClient.GetAsync($"convert/{amount}/{from}/{to}?" + BuildQuery(prettyPrint: prettyPrint), cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             throw new OpenExchangeRatesException(response.ReasonPhrase);
 
-        return await response.Content.ReadFromJsonAsync<ConvertResponse>(_jsonOptions, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<ConvertResponse>(JsonOptions, cancellationToken);
     }
 
     public async Task<IReadOnlyDictionary<string, string>?> GetCurrenciesAsync(bool prettyPrint = false, bool alternative = false,
@@ -78,13 +91,19 @@ public sealed class OpenExchangeRatesClient : IDisposable
         if (!response.IsSuccessStatusCode)
             throw new OpenExchangeRatesException(response.ReasonPhrase);
 
-        return await response.Content.ReadFromJsonAsync<IReadOnlyDictionary<string, string>?>(_jsonOptions, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<IReadOnlyDictionary<string, string>?>(JsonOptions, cancellationToken);
     }
 
     public async Task<RatesResponse?> GetHistoricalRatesAsync(DateOnly date, string baseCurrency = DefaultCurrency,
         IEnumerable<string>? currencies = null, bool prettyPrint = false, bool alternative = false, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentException.ThrowIfNullOrWhiteSpace(baseCurrency);
+#elif NET7_0
+        ArgumentException.ThrowIfNullOrEmpty(baseCurrency);
+#else
         ArgumentNullException.ThrowIfNull(baseCurrency);
+#endif
 
         return await GetHistoricalRatesAsync(date.ToDateTime(TimeOnly.MinValue), baseCurrency, currencies, prettyPrint, alternative,
             cancellationToken);
@@ -93,10 +112,16 @@ public sealed class OpenExchangeRatesClient : IDisposable
     public async Task<RatesResponse?> GetHistoricalRatesAsync(DateTime date, string baseCurrency = DefaultCurrency,
         IEnumerable<string>? currencies = null, bool prettyPrint = false, bool alternative = false, CancellationToken cancellationToken = default)
     {
+#if NET8_0_OR_GREATER
+        ArgumentException.ThrowIfNullOrWhiteSpace(baseCurrency);
+#elif NET7_0
+        ArgumentException.ThrowIfNullOrEmpty(baseCurrency);
+#else
         ArgumentNullException.ThrowIfNull(baseCurrency);
+#endif
 
         if (string.Equals(baseCurrency.Trim(), string.Empty, StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException(null, nameof(baseCurrency));
+            throw new ArgumentException(message: null, nameof(baseCurrency));
 
         var response = await _httpClient.GetAsync(
             $"historical/{date:yyyy-MM-dd}.json?" + BuildQuery(baseCurrency, currencies, prettyPrint, alternative), cancellationToken);
@@ -104,7 +129,7 @@ public sealed class OpenExchangeRatesClient : IDisposable
         if (!response.IsSuccessStatusCode)
             throw new OpenExchangeRatesException(response.ReasonPhrase);
 
-        return await response.Content.ReadFromJsonAsync<RatesResponse>(_jsonOptions, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<RatesResponse>(JsonOptions, cancellationToken);
     }
 
     public async Task<RatesResponse?> GetLatestRatesAsync(string? baseCurrency = null, IEnumerable<string>? currencies = null,
@@ -115,7 +140,7 @@ public sealed class OpenExchangeRatesClient : IDisposable
         if (!response.IsSuccessStatusCode)
             throw new OpenExchangeRatesException(response.ReasonPhrase);
 
-        return await response.Content.ReadFromJsonAsync<RatesResponse>(_jsonOptions, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<RatesResponse>(JsonOptions, cancellationToken);
     }
 
     public async Task<UsageData?> GetUsageDataAsync(bool prettyPrint = false, CancellationToken cancellationToken = default)
@@ -125,7 +150,7 @@ public sealed class OpenExchangeRatesClient : IDisposable
         if (!response.IsSuccessStatusCode)
             throw new OpenExchangeRatesException(response.ReasonPhrase);
 
-        var usageResponse = await response.Content.ReadFromJsonAsync<UsageResponse>(_jsonOptions, cancellationToken);
+        var usageResponse = await response.Content.ReadFromJsonAsync<UsageResponse>(JsonOptions, cancellationToken);
 
         return usageResponse?.Data;
     }
