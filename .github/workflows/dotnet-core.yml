@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      OPENEXCHANGERATES_APP_ID: ${{ secrets.OPENEXCHANGERATES_APP_ID }}
     steps:
     - uses: actions/checkout@v4
     - name: Setup .NET
@@ -22,7 +24,5 @@ jobs:
     - name: Run unit tests
       run: dotnet test --no-build --filter "Category!=Integration"
     - name: Run integration tests
-      if: ${{ secrets.OPENEXCHANGERATES_APP_ID != '' }}
-      env:
-        OPENEXCHANGERATES_APP_ID: ${{ secrets.OPENEXCHANGERATES_APP_ID }}
+      if: env.OPENEXCHANGERATES_APP_ID != ''
       run: dotnet test --no-build --filter "Category=Integration"
