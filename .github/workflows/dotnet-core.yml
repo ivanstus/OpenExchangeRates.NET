@@ -22,7 +22,7 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
     - name: Run unit tests
-      run: dotnet test --no-build --filter "Category!=Integration"
+      run: dotnet test --no-build -- --filter-not-trait "Category=Integration"
     - name: Run integration tests
       if: env.OPENEXCHANGERATES_APP_ID != ''
-      run: dotnet test --no-build --filter "Category=Integration"
+      run: dotnet test --no-build -- --filter-trait "Category=Integration"
