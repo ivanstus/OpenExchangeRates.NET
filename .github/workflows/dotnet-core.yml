@@ -2,23 +2,27 @@ name: .NET
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        dotnet-version: [ '6.0.x', '7.0.x', '8.0.x' ]
     steps:
     - uses: actions/checkout@v4
-    - name: Setup dotnet ${{ matrix.dotnet-version }}
-      uses: actions/setup-dotnet@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: ${{ matrix.dotnet-version }}
+        dotnet-version: '11.0.x'
     - name: Install dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build
+      run: dotnet build --no-restore
+    - name: Run unit tests
+      run: dotnet test --no-build --filter "Category!=Integration"
+    - name: Run integration tests
+      if: ${{ secrets.OPENEXCHANGERATES_APP_ID != '' }}
+      env:
+        OPENEXCHANGERATES_APP_ID: ${{ secrets.OPENEXCHANGERATES_APP_ID }}
+      run: dotnet test --no-build --filter "Category=Integration"
